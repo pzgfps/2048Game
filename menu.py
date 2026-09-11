@@ -1,255 +1,229 @@
-# Version: 1.0.5
-"""
+# Jogo do 2048 em pygame
+from operator import truediv
 
-> Cloudzik <
-Interactive-Python-Menu
-1.0.5
-16.11.2023
-https://github.com/Cloudzik1337/Interactive-Python-Menu
+import pygame
+import random
+
+pygame.init()
+
+WIDTH  = 400
+HEIGHT = 500
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption('2048')
+timer = pygame.time.Clock()
+fps = 60
+font = pygame.font.Font('freesansbold.ttf', 24)
+
+# 2048 color game library
+colors = {0: (204, 192,179),
+         2: (238, 228, 218),
+         4: (237, 224, 200),
+         8: (242, 177, 121),
+         16: (245, 149, 99),
+         32: (246, 124, 95),
+         64: (246, 94, 59),
+         128: (237, 207, 114),
+         256: (237, 204, 97),
+         512: (237,200, 80),
+         1024: (237, 197, 63),
+         2048: (237, 194, 46),
+         'ligh text': (249, 246, 242),
+         'dark text': (119, 110, 101),
+         'other': (0, 0, 0),
+         'bg': (187,173, 160)}
+
+# Iniciação de variáveis do jogo
+board_values = [[0 for _ in range(4)] for _ in range(4)]
+game_over = False
+spawn_new = True
+init_count = 0
+direction = ''
+score = 0
+file = open('high_score', 'r')
+init_high = int(file.readline())
+file.close()
+high_score = init_high
+
+def draw_over():
+    pygame.draw.rect(screen, 'black'[50, 50, 300, 100], 0, 10)
+    game_over_text1 = font.render('Fim de Jogo!', True, 'black')
+    game_over_text2 = font.render('Pressione Enter para Reiniciar', True, 'white')
+    screen.blit(game_over_text1, (130, 65))
+    screen.blit(game_over_text2, (70, 105))
+
+# take your turn based on direction
+def take_turn(direc, board):
+    global score
+    merged = [[False for _ in range(4)] for _ in range(4)]
+    if direc == 'UP':
+        for i in range(4):
+            for j in range(4):
+                shift = 0
+                if i > 0:
+                    for q in range(i):
+                        if board[i][j] == 0:
+                            shift += 1
+                    if shift > 0:
+                        board[i - shift][j] = board[i][j]
+                        board[i][j] = 0
+                    if board[i - shift - 1][j] == board[i - shift][j] and not merged[i - shift][j] \
+                        and not merged[i - shift][j]:
+                        board[i - shift - 1][j] *= 2
+                        score += board[i - shift - 1][j]
+                        board[i - shift][j] = 0
+                        merged[i - shift - 1][j] = True
+
+    elif direc == 'DOWN':
+        for i in range(3):
+            for j in range(4):
+                shift = 0
+                for q in range(i + 1):
+                    if board[3 - q][j] == 0:
+                        shift += 1
+                if shift > 0:
+                    board[2 - i + shift][j] = board[2 - i][j]
+                    board[2 - i][j] = 0
+                if 3 - i + shift <= 3:
+                    if board[2 - i + shift][j] == board[3 - i + shift][j] and not merged[3 - i + shift][j] \
+                            and not merged[2 - i + shift][j]:
+                        board[3 - i + shift][j] *= 2
+                        score += board[3 - i + shift][j]
+                        board[2 - i + shift][j] = 0
+                        merged[3 - i + shift][j] = True
+
+    elif direc == 'LEFT':
+        for i in range(4):
+            for j in range(4):
+                shift = 0
+                for q in range(j):
+                    if board[i][q] == 0:
+                        shift += 1
+                if shift > 0:
+                    board[i][j - shift] = board[i][j]
+                    board[i][j] = 0
+                if board[i][j - shift] == board[i][j - shift - 1] and not merged[i][j - shift - 1] \
+                        and not merged[i][j - shift]:
+                    board[i][j - shift - 1] *= 2
+                    score += board[i][j - shift - 1]
+                    board[i][j - shift] = 0
+                    merged[i][j - shift - 1] = True
+
+    elif direc == 'RIGHT':
+        for i in range(4):
+            for j in range(4):
+                shift = 0
+                for q in range(j):
+                    if board[i][3 - q] == 0:
+                        shift += 1
+                if shift > 0:
+                    board[i][3 - j + shift] = board[i][3 - j]
+                    board[i][3 - j] = 0
+                if 4 - j + shift <= 3:
+                    if board[i][4 - j + shift] == board[i][3 - j + shift] and not merged[i][ 4 - j + shift] \
+                            and not merged[i][3 - j + shift]:
+                        board[i][4 - j + shift] *= 2
+                        score += board[i][4 - j + shift]
+                        board[i][3 - j + shift] = 0
+                        merged[i][4 - j + shift] = True
+
+    return board
+
+# Função para criar novas peças
+def new_pieces(board):
+    count = 0
+    full = False
+    while any(0 in row for row in board) and count < 1:
+        row = random.randint(0, 3)
+        col = random.randint(0, 3)
+        if board[row][col] == 0:
+            count += 1
+            full = False
+            if random.randint(1, 10) == 10:
+                board[row][col] = 4
+            else:
+                board[row][col] = 2
+    if count < 1:
+        full = True
+    return board, full
+
+# Desenhar o fundo
+def draw_board():
+    pygame.draw.rect(screen, colors['bg'], [0, 0, 400, 400], 0, 10)
+    score_text = font.render(f'Score : {score}', True, 'black')
+    high_score_text = font.render(f'High Score: {high_score}', True, 'black')
+    screen.blit(score_text, (10, 410))
+    screen.blit(high_score_text, (10, 450))
+    pass
+
+# Desenhar os pedaços
+def draw_pieces(board):
+    for i in range(4):
+        for j in range(4):
+            value = board[i][j]
+            if value > 8:
+                value_color = colors['ligh text']
+            else:
+                value_color = colors['dark text']
+            if value <= 2048:
+                color = colors[value]
+            else:
+                color = colors['other']
+            pygame.draw.rect(screen, color, [j * 95 + 20, i * 95 + 20, 75, 75], 0, 5)
+            if value > 0:
+                value_len = len(str(value))
+                font = pygame.font.Font('freesansbold.ttf', 48 - (5 * value_len))
+                value_text = font.render(str(value), True, value_color)
+                text_rect = value_text.get_rect(center = (j * 95 + 57, i * 95 + 57))
+                screen.blit(value_text, text_rect)
+                pygame.draw.rect(screen, 'black', [j * 95 + 20, i * 95 + 20, 75, 75], 2, 5)
+
+# Main Game loop
+run = True
+while run:
+    timer.tick(fps)
+    screen.fill('gray')
+    draw_board()
+    draw_pieces(board_values)
+    if spawn_new or init_count < 2:
+        board_values, game_over = new_pieces(board_values)
+        spawn_new = False
+        init_count += 1
+    if direction != '':
+        board_values = take_turn(direction, board_values)
+        direction = ''
+        spawn_new = True
+    if game_over:
+        draw_over()
+        if high_score > init_high:
+            file = open('highscore.txt', 'w')
+            file.write(f'{high_score}')
+            file.close()
+            init_hight = high_score
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_UP:
+                direction = 'UP'
+            elif event.key == pygame.K_DOWN:
+                direction = 'DOWN'
+            elif event.key == pygame.K_LEFT:
+                direction = 'LEFT'
+            elif event.key == pygame.K_RIGHT:
+                direction = 'RIGHT'
+
+            if game_over:
+                if event.key == pygame.K_RETURN:
+                    board_values = [[0 for _ in range(4)] for _ in range(4)]
+                    spawn_new = True
+                    init_count = 0
+                    direction = ''
+                    game_over = False
 
 
-Changelog:
-1.0.5
-This version strongly focuses on optimization and code readability.
-1.0.4 pylint rating was 7.5/10 now in 1.0.5 its 9.79/10
-------------------------------------------------------------------
-Your code has been rated at 9.78/10 (previous run: 7.48/10, +2.30)
-------------------------------------------------------------------
-"""
+    if score > high_score:
+        high_score = score
 
-# Import necessary libraries
-import os
-import keyboard
-from pystyle import Center
-
-
-# Class definition for the menu colors
-class _Colors:
-    """Menu colors"""
-
-    @staticmethod
-    def _color_code(code):
-        """Static method to format color codes"""
-        return f'\033[{code}m'
-
-    ENDC: str = _color_code(0)
-    BOLD: str = _color_code(1)
-    UNDERLINE: str = _color_code(4)
-    BLACK: str = _color_code(30)
-    RED: str = _color_code(31)
-    GREEN: str = _color_code(32)
-    YELLOW: str = _color_code(33)
-    BLUE: str = _color_code(34)
-    MAGENTA: str = _color_code(35)
-    CYAN: str = _color_code(36)
-    WHITE: str = _color_code(37)
-    REDBG: str = _color_code(41)
-    GREENBG: str = _color_code(42)
-    YELLOWBG: str = _color_code(43)
-    BLUEBG: str = _color_code(44)
-    MAGENTABG: str = _color_code(45)
-    CYANBG: str = _color_code(46)
-    WHITEBG: str = _color_code(47)
-    GREY: str = _color_code(90)
-    REDGREY: str = _color_code(91)
-    GREENGREY: str = _color_code(92)
-    YELLOWGREY: str = _color_code(93)
-    BLUEGREY: str = _color_code(94)
-    MAGENTAGREY: str = _color_code(95)
-    CYANGREY: str = _color_code(96)
-    WHITEGREY: str = _color_code(97)
-    GREYBG: str = _color_code(100)
-    REDGREYBG: str = _color_code(101)
-    GREENGREYBG: str = _color_code(102)
-    YELLOWGREYBG: str = _color_code(103)
-    BLUEGREYBG: str = _color_code(104)
-    MAGENTAGREYBG: str = _color_code(105)
-    CYANGREYBG: str = _color_code(106)
-    WHITEGREYBG: str = _color_code(107)
-
-
-# Class definition for the menu styles
-class _Styles:
-    """Menu styles"""
-    DEFAULT: int = 1
-    SELECTED: int = 2
-    ARROW: int = 3
-    CENTERED: int = 11
-    CENTEREDSELECTED: int = 22
-    ARROWCENTERED: int = 33
-
-
-# Create instances of the classes
-Colors = _Colors()
-Styles = _Styles()
-
-
-# Class definition for the menu system
-class Menu:
-    """Menu system"""
-
-    def __init__(self,
-                 options: list = None,
-                 color: str = Colors.CYAN,
-                 style: int = Styles.DEFAULT,
-                 pretext: str = None):  # Use ANSI escape code for color
-        """
-
-        :options: list of menu options format: ["Option 1", "Option 2", "Option 3"]
-        :color: ANSI escape code for color format: Colors.CYAN
-        :style: menu style format: Styles.DEFAULT or Styles.SELECTED
-        or Styles.CENTERED or Styles.CENTEREDSELECTED
-        :pretext: text to display before the menu otherwise it will earesed
-        To get the selected option, use menu.selected or menu.selected_index
-
-
-        Example:
-        import menu
-        options = ["Option 1", "Option 2", "Option 3"]
-        my_menu = menu.Menu(options=options, style=menu.Styles.SELECTED)
-        User_choice = my_menu.launch(response="String") # can be "String" or "Index"
-        # There are two ways to get the selected option
-        # 1. Get the index of the selected option
-        print(my_menu.selected_index)
-        # 2. Get the string of the selected option
-        print(my_menu.selected)
-        # also you can get the index or string by using the variable User_choice
-        print(User_choice) # change response to "Index" or "String" to get the index or string
-        """
-        self.pretext = str(pretext)
-        self.style = style
-        self.options = options
-        self.color = color
-        self.index = 0
-        if options is not None:
-            self.index_max = len(options)
-        self.selected = None
-        self.json = {}
-        self.selected_index = None
-        self.last_known_index = 1
-
-    def launch(self, response: str = "String"):
-
-        """Launch the menu
-        :response: Let user decide if menu should return index or string"""
-        return self._create_menu(response)
-
-    def _create_menu(self, response: str = "String"):
-        # Create a dictionary mapping index to menu options
-        for index, option in enumerate(self.options):
-            self.json[index] = option
-
-        # Set up hotkeys for navigation
-        keyboard.add_hotkey('up', self._up, suppress=True)
-        keyboard.add_hotkey('down', self._down, suppress=True)
-        keyboard.add_hotkey('enter', self._enter, suppress=True)
-        keyboard.add_hotkey('right', self._enter, suppress=True)
-
-        # Display the menu and wait for user input
-        self._display()
-
-        # Unhook all hotkeys after menu display
-        keyboard.unhook_all()
-        if response == "String":
-            return self.selected
-        return self.selected_index
-
-    def _up(self):
-        # Move the selection index up
-        self.index = (self.index - 1) % self.index_max
-
-    def _down(self):
-        # Move the selection index down
-        self.index = (self.index + 1) % self.index_max
-
-    def _enter(self):
-        # Set the selected option based on the current index
-        self.selected = self.index
-
-    def _style_parse_non_center(self):
-        """ Parse the style and display the menu
-        1 = default,
-        2 = > option < style
-        3 = ↳ option style
-        11 = 1 but with a centered title
-        22 = 2 but with a centered title
-        33 = 3 but with a centered title
-        """
-        # This if statement chain determines the style of the menu
-        if self.style == 1:
-            for i in range(self.index_max):
-                if i == self.index:
-                    print(self.color + self.json[i] + Colors.ENDC)
-                else:
-                    print(self.json[i])
-        elif self.style == 2:
-            for i in range(self.index_max):
-                if i == self.index:
-                    print(self.color + "> " + self.json[i] + " <" + Colors.ENDC)
-                else:
-                    print(self.json[i])
-        elif self.style == 3:
-            for i in range(self.index_max):
-                if i == self.index:
-                    print(self.color + "↳ " + self.json[i] + Colors.ENDC)
-                else:
-                    print(self.json[i])
-
-    def _style_parse_center(self):
-        """ Parse the style and display the menu"""
-        equaling_space = "         "
-        if self.style == 11:
-            for i in range(self.index_max):
-                if i == self.index:
-                    sep = equaling_space
-                    print(Center.XCenter(self.color + sep + self.json[i] + Colors.ENDC))
-                else:
-                    print(Center.XCenter(self.json[i]))
-        if self.style == 22:
-            for i in range(self.index_max):
-                if i == self.index:
-                    # blank space for centering
-                    sep = equaling_space + "> "
-                    print(Center.XCenter(self.color + sep + self.json[i] + " <" + Colors.ENDC))
-                else:
-                    print(Center.XCenter(self.json[i]))
-        if self.style == 33:
-            for i in range(self.index_max):
-                if i == self.index:
-                    sep = equaling_space + "↳ "
-                    print(Center.XCenter(self.color + sep + self.json[i] + Colors.ENDC))
-                else:
-                    print(Center.XCenter(self.json[i]))
-
-    def _display(self):
-        # Initialize index and selected values
-        self.index = 0
-        self.selected = None
-
-        # Display the menu options with highlighting for the selected option
-        while self.selected is None:
-            if self.last_known_index != self.index:
-                # Update the screen with the current menu state
-                self.last_known_index = self.index
-                self.cls()
-                if self.pretext is not None:
-                    if self.style in [11, 22, 33]:
-                        print(Center.XCenter(self.pretext))
-                        self._style_parse_center()
-                    else:
-                        print(self.pretext)
-                        self._style_parse_non_center()
-        # Set the selected value to the corresponding menu option
-        self.selected = self.json[self.selected]
-        self.selected_index = self.index
-
-    def show_example(self):
-        """Show an example of each menu style"""
-        for example_style in [1, 2, 3, 11, 22, 33]:
-            options = ["Option 1", "Option 2", "Option 3"]
-            Menu(options=options, style=example_style).launch()
-
-    @staticmethod
-    def cls():
-        """Clear the console screen"""
-        os.system('cls' if os.name == 'nt' else 'printf "\033c"')
+    pygame.display.flip()
+pygame.quit()
