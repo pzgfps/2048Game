@@ -45,9 +45,9 @@ file.close()
 high_score = init_high
 
 def draw_over():
-    pygame.draw.rect(screen, 'black'[50, 50, 300, 100], 0, 10)
+    pygame.draw.rect(screen, 'black',[50, 50, 300, 100], 0, 10)
     game_over_text1 = font.render('Fim de Jogo!', True, 'black')
-    game_over_text2 = font.render('Pressione Enter para Reiniciar', True, 'white')
+    game_over_text2 = font.render('Enter para Reinicar', True, 'white')
     screen.blit(game_over_text1, (130, 65))
     screen.blit(game_over_text2, (70, 105))
 
@@ -58,16 +58,16 @@ def take_turn(direc, board):
     if direc == 'UP':
         for i in range(4):
             for j in range(4):
-                shift = 0
-                if i > 0:
+                if board[i][j] != 0:  # só processa células com peça
+                    shift = 0
                     for q in range(i):
-                        if board[i][j] == 0:
+                        if board[q][j] == 0:  # checa a coluna acima, célula por célula
                             shift += 1
                     if shift > 0:
                         board[i - shift][j] = board[i][j]
                         board[i][j] = 0
-                    if board[i - shift - 1][j] == board[i - shift][j] and not merged[i - shift][j] \
-                        and not merged[i - shift][j]:
+                    if i - shift - 1 >= 0 and board[i - shift - 1][j] == board[i - shift][j] \
+                            and not merged[i - shift - 1][j] and not merged[i - shift][j]:
                         board[i - shift - 1][j] *= 2
                         score += board[i - shift - 1][j]
                         board[i - shift][j] = 0
