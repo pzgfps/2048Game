@@ -46,8 +46,8 @@ high_score = init_high
 
 def draw_over():
     pygame.draw.rect(screen, 'black',[50, 50, 300, 100], 0, 10)
-    game_over_text1 = font.render('Fim de Jogo!', True, 'black')
-    game_over_text2 = font.render('Enter para Reinicar', True, 'white')
+    game_over_text1 = font.render('Fim de Jogo!', True, 'white')
+    game_over_text2 = font.render('Enter para Reiniciar', True, 'white')
     screen.blit(game_over_text1, (130, 65))
     screen.blit(game_over_text2, (70, 105))
 
